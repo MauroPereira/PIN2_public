@@ -20,7 +20,7 @@ sudo bash -c 'cat <<EOF > /var/www/html/index.html
 </head>
 <body>
     <h1>PIN2 DevOps 2024</h1>
-    <p><a href="https://github.com/MauroPereira/PIN2" target="_blank">Project Repository</a></p>
+    <p><a href="https://github.com/MauroPereira/PIN2_public" target="_blank">PIN2_public project repository</a></p>
     <p>Created by 
         <a href="mailto:mauro.a.p.pereira@gmail.com">Pereira, Mauro Alejandro</a>
     </p>
