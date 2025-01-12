@@ -1,0 +1,143 @@
+name: "PIN2"
+
+on:
+  #   push:
+  #     branches:
+  #       - test
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform"
+        type: choice
+        options:
+          - Create backend
+          - Destroy backend
+          - Write AWS secrets and Create backend
+      aws_access_key_id:
+        description: "AWS Access Key ID"
+        required: true
+      aws_secret_access_key:
+        description: "AWS Secret Access Key"
+        required: true
+      aws_default_region:
+        description: "AWS Default Region"
+        default: "us-east-1"
+        required: false
+
+jobs:
+  write_aws_secrets:
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'Write AWS secrets and Create backend')  }}
+    name: "Write AWS secrets"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Write AWS_ACCESS_KEY_ID"
+        uses: hmanzur/actions-set-secret@v2.0.0
+        with:
+          name: "AWS_ACCESS_KEY_ID"
+          value: ${{ github.event.inputs.aws_access_key_id }}
+          token: ${{ secrets.REPO_SECRET_WRITE_TOKEN }}
+
+      - name: "Write AWS_SECRET_ACCESS_KEY"
+        uses: hmanzur/actions-set-secret@v2.0.0
+        with:
+          name: "AWS_SECRET_ACCESS_KEY"
+          value: ${{ github.event.inputs.aws_secret_access_key }}
+          token: ${{ secrets.REPO_SECRET_WRITE_TOKEN }}
+
+      - name: "Write AWS_DEFAULT_REGION"
+        uses: hmanzur/actions-set-secret@v2.0.0
+        with:
+          name: "AWS_DEFAULT_REGION"
+          value: ${{ github.event.inputs.aws_default_region }}
+          token: ${{ secrets.REPO_SECRET_WRITE_TOKEN }}
+
+  read_aws_secrets:
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'Write AWS secrets and Create backend')  }}
+    name: "Read AWS secret"
+    runs-on: ubuntu-latest
+    needs: write_aws_secrets
+    steps:
+      - name: "Read AWS secret"
+        run: |
+          SECRET="${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "The first 4 characters of the AWS Access Key ID are: ${SECRET:0:4}"
+          SECRET="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "The first 4 characters of the AWS Secret Access Key are: ${SECRET:0:4}"
+          SECRET="${{ secrets.AWS_DEFAULT_REGION }}"
+          echo "The first 4 characters of the AWS Default Region are: ${SECRET:0:4}"
+
+  terraform_backend_apply:
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.action == 'Create backend' || github.event.inputs.action == 'Write AWS secrets and Create backend'))  }}
+    needs: write_aws_secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: pin2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: pin2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve
+        working-directory: pin2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+  terraform_backend_destroy:
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'Destroy backend') }}
+    needs: write_aws_secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: pin2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: pin2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Terraform Destroy
+        id: destroy
+        run: terraform destroy -auto-approve
+        working-directory: pin2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
