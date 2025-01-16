@@ -22,7 +22,7 @@ on:
       aws_default_region:
         description: "AWS Default Region"
         default: "us-east-1"
-        required: false
+        required: true
 
 jobs:
   write_aws_secrets:
