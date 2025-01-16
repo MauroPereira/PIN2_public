@@ -68,7 +68,7 @@ jobs:
 
   terraform_backend_apply:
     if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.action == 'Create backend' || github.event.inputs.action == 'Write AWS secrets and Create backend'))  }}
-    needs: write_aws_secrets
+    #needs: write_aws_secrets
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -106,7 +106,7 @@ jobs:
 
   terraform_backend_destroy:
     if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'Destroy backend') }}
-    needs: write_aws_secrets
+    #needs: write_aws_secrets
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
